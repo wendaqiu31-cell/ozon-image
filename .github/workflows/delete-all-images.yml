@@ -10,7 +10,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Delete old images
         env:
           RETENTION_DAYS: '1'  # 保留天数，改为 3/7/30 等
