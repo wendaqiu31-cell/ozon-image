@@ -1,0 +1,39 @@
+name: Auto Cleanup Images
+on:
+  schedule:
+    - cron: '0 19 * * *'  # UTC 19:00 = 北京时间 03:00，按需修改
+  workflow_dispatch:       # 支持在 Actions 页面手动触发
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - name: Delete old images
+        env:
+          RETENTION_DAYS: '1'  # 保留天数，改为 3/7/30 等
+        run: |
+          python3 <<'EOF'
+          import os, subprocess, datetime, glob
+          retention = int(os.environ['RETENTION_DAYS'])
+          cutoff = datetime.datetime.now() - datetime.timedelta(days=retention)
+          files = glob.glob('images/**/*', recursive=True)
+          deleted = 0
+          for f in files:
+              if not os.path.isfile(f):
+                  continue
+              mtime = datetime.datetime.fromtimestamp(os.path.getmtime(f))
+              if mtime < cutoff:
+                  subprocess.run(['git', 'rm', '-f', f], check=False)
+                  deleted += 1
+          if deleted > 0:
+              subprocess.run(['git', 'config', 'user.name', 'github-actions[bot]'])
+              subprocess.run(['git', 'config', 'user.email', 'github-actions@github.com'])
+              subprocess.run(['git', 'commit', '-m', f'auto cleanup: deleted {deleted} images older than {retention} days'])
+              subprocess.run(['git', 'push'])
+              print(f'Deleted {deleted} images')
+          else:
+              print('No images to delete')
+          EOF
