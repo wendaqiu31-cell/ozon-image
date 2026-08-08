@@ -1,0 +1,23 @@
+name: Delete All Images
+on:
+  workflow_dispatch:  # 只能手动触发，不会自动跑
+
+jobs:
+  delete:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Delete all images
+        run: |
+          if [ -d "images" ]; then
+            git rm -rf images/
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions@github.com"
+            git commit -m "delete all images (manual cleanup)"
+            git push
+            echo "=== All images deleted ==="
+          else
+            echo "=== No images directory found, nothing to delete ==="
+          fi
